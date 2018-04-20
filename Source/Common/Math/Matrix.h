@@ -197,6 +197,13 @@ public:
         return res;
     }
 
+    // Construct a identity matrix
+    static Mat4 identity() {
+        Mat4 res(T(0.0));
+        res.data[0] = res.data[5] = res.data[10] = res.data[15] = T(1.0);
+        return res;
+    }
+
     // Construct a rotation matrix
     static Mat4 rotation(T degrees, Vec3<T> vec) {
         Mat4 res;
@@ -256,4 +263,4 @@ public:
 
 typedef Mat4<float> Mat4f;
 // It is recommended to use Mat4f instead of Mat4d if you are dealing with rendering.
-typedef Mat4<float> Mat4d;
+typedef Mat4<double> Mat4d;

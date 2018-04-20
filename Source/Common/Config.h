@@ -57,16 +57,6 @@
 #define NWAPIEXPORT __attribute__((visibility("default")))
 #endif
 
-constexpr const char* NEWorldVersionName = "Beta 0.1";
-constexpr unsigned short NEWorldVersion = 40u;
-constexpr const char* CopyrightString =
-    R"(
-NEWorld  Copyright (C) 2016  NEWorld Team
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome to redistribute it under certain conditions.
-For details see "LICENSE".
-)";
-
 #ifdef NWCOREEXPORTS
 #define NWCOREAPI NWAPIEXPORT
 #else

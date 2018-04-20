@@ -18,7 +18,11 @@ endif()
 find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE SRC_COMM Source/*.*)
-add_executable(Common ${SRC_COMM})
+add_library(Common SHARED ${SRC_COMM})
+
+target_compile_definitions(Common
+        PRIVATE -DNWCOREEXPORTS
+        PRIVATE -DNWCompartmentLoggerPrefix="Core")
 
 # Optional IPO. Do not use IPO if it's not supported by compiler.
 cmake_policy(SET CMP0069 NEW)
@@ -30,5 +34,6 @@ else()
     message(STATUS "IPO is not supported: ${output}")
 endif()
 
-target_include_directories(Common SYSTEM INTERFACE Source)
+target_include_directories(Common PUBLIC Source 3rdParty)
+target_include_directories(Common SYSTEM PUBLIC 3rdParty)
 target_link_libraries(Common Threads::Threads)
