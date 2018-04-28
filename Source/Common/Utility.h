@@ -18,6 +18,7 @@
 // 
 
 #pragma once
+
 class NonCopyable {
 public:
     NonCopyable() = default;
@@ -25,4 +26,13 @@ public:
     NonCopyable& operator =(NonCopyable&&) = default;
     NonCopyable(const NonCopyable&) = delete;
     NonCopyable& operator =(const NonCopyable&) = delete;
+};
+
+struct NonCopyableVirtualBase {
+    NonCopyableVirtualBase() = default;
+    NonCopyableVirtualBase(NonCopyableVirtualBase&&) = default;
+    NonCopyableVirtualBase& operator = (NonCopyableVirtualBase&&) = default;
+    NonCopyableVirtualBase(const NonCopyableVirtualBase&) = delete;
+    NonCopyableVirtualBase& operator = (const NonCopyableVirtualBase&)= delete;
+    virtual ~NonCopyableVirtualBase() = default;
 };
