@@ -76,7 +76,7 @@ private:
     void writeOstream(std::ostream& ostream, bool noColor = false) const;
 };
 
-#define loggerstream(level) Logger(__FILE__, __FUNCTION__, __LINE__, Logger::Level::level, NWCompartmentLoggerPrefix)
+#define loggerstream(level) Logger(__FILE__, __FUNCTION__, __LINE__, Logger::Level::level, NW_COMPONENT_NAME)
 // Information for tracing
 #define verbosestream loggerstream(verbose)
 // Information for developers
