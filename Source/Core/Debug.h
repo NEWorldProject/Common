@@ -1,5 +1,5 @@
 // 
-// Core: Filesystem.h
+// Core: Debug.h
 // NEWorld: A Free Game with Similar Rules to Minecraft.
 // Copyright (C) 2015-2018 NEWorld Team
 // 
@@ -21,25 +21,14 @@
 
 #include "Config.h"
 
-#ifdef _MSC_VER
-#include <filesystem>
-namespace filesystem = std::experimental::filesystem;
+// Assertion uses C++ exception
+NWCOREAPI void assertFunc(bool expr, const char* file, const char* fname, int line);
+
+#ifdef NEWORLD_DEBUG
+#    define Assert(expr) AssertFunc((expr) != 0, __FILE__, __FUNCTION__, __LINE__)
 #else
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace filesystem = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-#include <experimental/filesystem>
-namespace filesystem = std::experimental::filesystem;
-#elif __has_include(<boost/filesystem.hpp>)
-#include <boost/filesystem.hpp>
-namespace filesystem = boost::filesystem;
-#endif
+#    define Assert(expr) nullptr
 #endif
 
-NWCOREAPI void fsInit(const char* argv0);
-NWCOREAPI filesystem::path executablePath();
-NWCOREAPI filesystem::path assetDir(const char* moduleName);
-NWCOREAPI filesystem::path assetDir(const std::string& moduleName);
-NWCOREAPI filesystem::path dataDir(const char* moduleName);
-NWCOREAPI filesystem::path dataDir(const std::string& moduleName);
+#undef assert
+#define assert(expr) Assert(expr)

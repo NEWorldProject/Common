@@ -65,7 +65,7 @@ namespace {
 
     filesystem::path makeWithString(const char* argv0) {
         std::error_code ec;
-        auto p(filesystem::canonical(argv0, filesystem::current_path(), ec));
+        auto p(filesystem::canonical(argv0, ec));
         return ec ? p.make_preferred() : "";
     }
 
@@ -247,8 +247,6 @@ filesystem::path ExecPathHelper::executablePathWorker() { return ""; }
 
 filesystem::path executablePath() { return ExecPathHelper::getInstance(); }
 
-void fsInit(const char *argv0) { ExecPathHelper::getInstance().init(argv0); }
-
 filesystem::path assetDir(const char *moduleName) { return executablePath() / "Assets" / moduleName; }
 
 filesystem::path assetDir(const std::string &moduleName) { return assetDir(moduleName.c_str()); }
@@ -256,3 +254,6 @@ filesystem::path assetDir(const std::string &moduleName) { return assetDir(modul
 filesystem::path dataDir(const char* moduleName) { return executablePath() / "Data" / moduleName; }
 
 filesystem::path dataDir(const std::string& moduleName) { return dataDir(moduleName.c_str()); }
+
+// Internal Functions
+void _InternalFilesystemCoInit(const char *argv0) { ExecPathHelper::getInstance().init(argv0); }

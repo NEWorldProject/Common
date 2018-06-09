@@ -1,5 +1,5 @@
 // 
-// Core: Debug.cpp
+// Core: JsonHelper.h
 // NEWorld: A Free Game with Similar Rules to Minecraft.
 // Copyright (C) 2015-2018 NEWorld Team
 // 
@@ -17,14 +17,27 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "Debug.h"
-#include "Logger.h"
+#pragma once
 
-// Assertion uses C++ exception
-void AssertFunc(bool expr, const char* file, const char* fname, int line) {
-    if (!expr) {
-        fatalstream << "Assertion failed!\nAt line " << line
-            << " in \"" << file << "\", function " << fname;
-        throw std::runtime_error("Assertion failed!");
+#include "nlohmann/json.hpp"
+#include "Config.h"
+
+using Json = nlohmann::json;
+
+const std::string SettingsFilename = "./settings";
+
+NWCOREAPI Json readJsonFromFile(std::string filename);
+
+NWCOREAPI void writeJsonToFile(std::string filename, Json& json);
+
+NWCOREAPI Json& getSettings();
+
+// get a json value. If it does not exist, return the default value and write it to the json
+template <class T>
+T getJsonValue(Json& json, T defaultValue = T()) {
+    if (json.is_null()) {
+        json = defaultValue;
+        return defaultValue;
     }
+    return json;
 }

@@ -46,7 +46,10 @@ CmdOption::CmdOption(argagg::definition def) {
     parser.definitions.push_back(std::move(def));
 }
 
+void _InternalFilesystemCoInit(const char *argv0);
+
 NWAPIEXPORT int main(int argc, char** argv) {
+    _InternalFilesystemCoInit(argv[0]);
     try {
         pargs = parser.parse(argc, argv);
         try {

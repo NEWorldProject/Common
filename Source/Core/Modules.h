@@ -1,5 +1,5 @@
 // 
-// Core: Debug.h
+// Core: Modules.h
 // NEWorld: A Free Game with Similar Rules to Minecraft.
 // Copyright (C) 2015-2018 NEWorld Team
 // 
@@ -20,15 +20,13 @@
 #pragma once
 
 #include "Config.h"
+#include <string>
 
-// Assertion uses C++ exception
-NWCOREAPI void AssertFunc(bool expr, const char* file, const char* fname, int line);
+class ModuleObject {
+public:
+    virtual ~ModuleObject() = default;
+};
 
-#ifdef NEWORLD_DEBUG
-#    define Assert(expr) AssertFunc((expr) != 0, __FILE__, __FUNCTION__, __LINE__)
-#else
-#    define Assert(expr) nullptr
-#endif
-
-#undef assert
-#define assert(expr) Assert(expr)
+NWCOREAPI void loadModules();
+NWCOREAPI bool isModuleLoaded(const std::string& uri);
+NWCOREAPI int getModuleCount() noexcept;

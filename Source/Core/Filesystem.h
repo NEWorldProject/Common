@@ -1,5 +1,5 @@
 // 
-// Core: Modules.h
+// Core: Filesystem.h
 // NEWorld: A Free Game with Similar Rules to Minecraft.
 // Copyright (C) 2015-2018 NEWorld Team
 // 
@@ -19,14 +19,18 @@
 
 #pragma once
 
-#include "Common/Config.h"
-#include <string>
+#include "Config.h"
 
-class ModuleObject {
-public:
-    virtual ~ModuleObject() = default;
-};
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace filesystem = std::filesystem;
+#elif __has_include(<boost/filesystem.hpp>)
+#include <boost/filesystem.hpp>
+namespace filesystem = boost::filesystem;
+#endif
 
-NWCOREAPI void loadModules();
-NWCOREAPI bool isModuleLoaded(const std::string& uri);
-NWCOREAPI int getModuleCount() noexcept;
+NWCOREAPI filesystem::path executablePath();
+NWCOREAPI filesystem::path assetDir(const char* moduleName);
+NWCOREAPI filesystem::path assetDir(const std::string& moduleName);
+NWCOREAPI filesystem::path dataDir(const char* moduleName);
+NWCOREAPI filesystem::path dataDir(const std::string& moduleName);

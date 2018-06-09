@@ -18,10 +18,10 @@
 // 
 
 #include "Modules.h"
-#include "Common/Dylib.h"
-#include "Common/Logger.h"
-#include "Common/Filesystem.h"
-#include "Common/JsonHelper.h"
+#include "Dylib.h"
+#include "Logger.h"
+#include "Filesystem.h"
+#include "JsonHelper.h"
 #include <cstdlib>
 #include <set>
 

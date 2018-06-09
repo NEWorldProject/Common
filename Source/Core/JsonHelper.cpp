@@ -18,7 +18,7 @@
 // 
 
 #include "JsonHelper.h"
-#include "Common/Logger.h"
+#include "Logger.h"
 #include <fstream>
 
 namespace {

@@ -19,14 +19,15 @@
 
 #pragma once
 
+#include <cstring>
 #include "Vector.h"
-#include "Common/Debug.h"
+#include "Core/Debug.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653589793
 #endif // !M_PI
 
-#ifdef NEXWORLD_DEBUG
+#ifdef NEWORLD_DEBUG
 
 // Mat4Row for range checking when debugging is enabled
 template <typename T>
@@ -61,7 +62,7 @@ public:
 
     explicit Mat4(T* src) { memcpy(data, src, sizeof(data)); }
 
-#ifndef NEXWORLD_DEBUG
+#ifndef NEWORLD_DEBUG
 
     T* operator[](size_t index) { return data + index * 4; }
 
