@@ -17,11 +17,11 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "Modules.h"
-#include "Dylib.h"
-#include "Logger.h"
-#include "Filesystem.h"
-#include "JsonHelper.h"
+#include "Core/Modules.h"
+#include "Core/Dylib.h"
+#include "Core/Logger.h"
+#include "Core/Filesystem.h"
+#include "Core/JsonHelper.h"
 #include <cstdlib>
 #include <set>
 

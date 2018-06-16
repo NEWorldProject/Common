@@ -21,9 +21,9 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
-#include "Logger.h"
-#include "Filesystem.h"
-#include "Console.h"
+#include "Core/Logger.h"
+#include "Core/Filesystem.h"
+#include "Core/Console.h"
 
 std::mutex Logger::mutex;
 std::vector<std::ofstream> Logger::fsink;

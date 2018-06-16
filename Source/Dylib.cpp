@@ -17,7 +17,7 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "Dylib.h"
+#include "Core/Dylib.h"
 #include <cassert>
 #include <sstream>
 

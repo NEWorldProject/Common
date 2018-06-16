@@ -18,8 +18,8 @@
 //
 
 #include <iostream>
-#include "Application.h"
-#include "Logger.h"
+#include "Core/Application.h"
+#include "Core/Logger.h"
 
 namespace {
     Application* appInstanceHandle = nullptr;

@@ -17,8 +17,8 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "JsonHelper.h"
-#include "Logger.h"
+#include "Core/JsonHelper.h"
+#include "Core/Logger.h"
 #include <fstream>
 
 namespace {

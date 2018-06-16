@@ -56,7 +56,6 @@
 #define NWAPIENTRY __attribute__((visibility("default")))
 #define NWAPIEXPORT __attribute__((visibility("default")))
 #endif
-
 #ifdef NW_CORE_EXPORTS
 #define NWCOREAPI NWAPIEXPORT
 #else

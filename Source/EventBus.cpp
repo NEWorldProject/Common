@@ -1,5 +1,5 @@
 // 
-// Core: Debug.cpp
+// Core: EventBus.cpp
 // NEWorld: A Free Game with Similar Rules to Minecraft.
 // Copyright (C) 2015-2018 NEWorld Team
 // 
@@ -17,14 +17,5 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "Debug.h"
-#include "Logger.h"
-
-// Assertion uses C++ exception
-void assertFunc(bool expr, const char* file, const char* fname, int line) {
-    if (!expr) {
-        fatalstream << "Assertion failed!\nAt line " << line
-            << " in \"" << file << "\", function " << fname;
-        throw std::runtime_error("Assertion failed!");
-    }
-}
+#include "Core/EventBus.h"
+NWCOREAPI EventBus eventBus;

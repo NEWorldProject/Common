@@ -17,7 +17,7 @@
 // along with NEWorld.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
-#include "Console.h"
+#include "Core/Console.h"
 
 #if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
 

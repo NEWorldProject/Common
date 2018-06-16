@@ -19,8 +19,8 @@
 
 #include <string>
 #include <cstring>
-#include "Filesystem.h"
-#include "StringUtils.h"
+#include "Core/Filesystem.h"
+#include "Core/StringUtils.h"
 
 #if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
 #include "Internals/Windows.hpp"
