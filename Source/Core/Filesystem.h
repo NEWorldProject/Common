@@ -20,17 +20,5 @@
 #pragma once
 
 #include "Config.h"
-
-#if __has_include(<filesystem>)
 #include <filesystem>
 namespace filesystem = std::filesystem;
-#elif __has_include(<boost/filesystem.hpp>)
-#include <boost/filesystem.hpp>
-namespace filesystem = boost::filesystem;
-#endif
-
-NWCOREAPI filesystem::path executablePath();
-NWCOREAPI filesystem::path assetDir(const char* moduleName);
-NWCOREAPI filesystem::path assetDir(const std::string& moduleName);
-NWCOREAPI filesystem::path dataDir(const char* moduleName);
-NWCOREAPI filesystem::path dataDir(const std::string& moduleName);

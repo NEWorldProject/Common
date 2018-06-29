@@ -20,15 +20,18 @@
 #pragma once
 
 #include "Config.h"
+#include <iosfwd>
 
 // Assertion uses C++ exception
 NWCOREAPI void assertFunc(bool expr, const char* file, const char* fname, int line);
 
 #ifdef NEWORLD_DEBUG
-#    define Assert(expr) AssertFunc((expr) != 0, __FILE__, __FUNCTION__, __LINE__)
+#    define Assert(expr) assertFunc((expr) != 0, __FILE__, __FUNCTION__, __LINE__)
 #else
 #    define Assert(expr) nullptr
 #endif
 
 #undef assert
 #define assert(expr) Assert(expr)
+
+NWCOREAPI std::ostream& stacktrace(std::ostream& s);

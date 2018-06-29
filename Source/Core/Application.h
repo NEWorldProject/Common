@@ -19,15 +19,21 @@
 
 #pragma once
 
-#include "Config.h"
 #include <argagg.hpp>
+#include "Config.h"
+#include "Filesystem.h"
 
 class NWCOREAPI Application {
 public:
     virtual void run();
+    static filesystem::path executablePath();
+    static filesystem::path assetDir(const char* moduleName);
+    static filesystem::path assetDir(const std::string& moduleName);
+    static filesystem::path dataDir(const char* moduleName);
+    static filesystem::path dataDir(const std::string& moduleName);
     static argagg::parser_results& args();
 protected:
-    Application();
+    Application() noexcept;
     virtual ~Application();
 };
 

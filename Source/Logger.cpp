@@ -97,8 +97,6 @@ Logger::Logger(const char* fileName, const char* funcName, int lineNumber, Level
     case Level::fatal:
         mContent << LColor::red;
         break;
-    default:
-        break;
     }
     mContent << levelTags[static_cast<size_t>(level)];
 }

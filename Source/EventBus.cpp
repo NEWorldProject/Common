@@ -18,4 +18,32 @@
 // 
 
 #include "Core/EventBus.h"
+#include "Core/Logger.h"
+
 NWCOREAPI EventBus eventBus;
+
+std::vector<EventBus::FunctionPointer> &EventBus::getSubscribers(const std::string &funcName, const std::type_info &typeId) {
+    return mSubscribers[std::to_string(typeId.hash_code()) + "!" + funcName];
+}
+
+void EventBus::registerImpl(const std::string &funcName, FunctionPointer func, const std::type_info &typeId) {
+    auto& list = getSubscribers(funcName, typeId);
+    list.emplace_back(func);
+    if (list.size() != 1)
+        warningstream << "Multiple(" << list.size() << ") functions with name" << funcName << " and type " <<
+                      typeId.name() << " (hash: " << typeId.hash_code() << ") registered.";
+}
+
+EventBus::FunctionPointer EventBus::callGet(const std::string &funcName, const std::type_info &typeId) {
+    auto& list = getSubscribers(funcName, typeId);
+    if (list.size() == 0) {
+        warningstream << "Failed to call function " << funcName
+                      << " with type " << typeId.name() << " (hash: " << typeId.hash_code() << "): "
+                      << (list.empty()
+                          ? "No such function registered"
+                          : "Multiple(" + std::to_string(list.size()) + ") functions registered.");
+        throw std::runtime_error(funcName + " with type " + typeId.name()
+                                 + " (hash: " + std::to_string(typeId.hash_code()) + ") does not exist");
+    }
+    return list[0];
+}

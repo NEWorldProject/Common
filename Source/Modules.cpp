@@ -20,7 +20,7 @@
 #include "Core/Modules.h"
 #include "Core/Dylib.h"
 #include "Core/Logger.h"
-#include "Core/Filesystem.h"
+#include "Core/Application.h"
 #include "Core/JsonHelper.h"
 #include <cstdlib>
 #include <set>
@@ -34,16 +34,14 @@ constexpr bool operator >=(const Version& l, const Version& r) noexcept {
     if (l.vMajor < r.vMajor) return false;
     if (l.vMajor == r.vMajor && l.vMinor < r.vMinor) return false;
     if (l.vMinor == r.vMinor && l.vRevision < r.vRevision) return false;
-    if (l.vRevision == r.vRevision && l.vBuild < r.vBuild) return false;
-    return true;
+    return !(l.vRevision == r.vRevision && l.vBuild < r.vBuild);
 }
 
 constexpr bool operator <=(const Version& l, const Version& r) noexcept {
     if (l.vMajor > r.vMajor) return false;
     if (l.vMajor == r.vMajor && l.vMinor > r.vMinor) return false;
     if (l.vMinor == r.vMinor && l.vRevision > r.vRevision) return false;
-    if (l.vRevision == r.vRevision && l.vBuild > r.vBuild) return false;
-    return true;
+    return !(l.vRevision == r.vRevision && l.vBuild > r.vBuild);
 }
 
 constexpr bool operator ==(const Version& l, const Version& r) noexcept {
@@ -101,7 +99,7 @@ void loadModules() { ModuleManager::getInstance().load(); }
 
 bool isModuleLoaded(const std::string& uri) { return ModuleManager::getInstance().isLoaded(uri); }
 
-int getModuleCount() noexcept { return ModuleManager::getInstance().getCount(); }
+int getModuleCount() noexcept { return static_cast<int>(ModuleManager::getInstance().getCount()); }
 
 ///////////////////////////////////////////////////////////////////////////////
 //                            IMPLEMENTATION
@@ -134,7 +132,7 @@ class ModuleManager::ModuleLoader final {
         Status stat = Status::Pending;
     };
 
-    static auto getModuleDir() { return executablePath() / "Modules"; }
+    static auto getModuleDir() { return Application::executablePath() / "Modules"; }
 
 public:
     ModuleLoader();

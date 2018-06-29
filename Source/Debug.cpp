@@ -19,12 +19,20 @@
 
 #include "Core/Debug.h"
 #include "Core/Logger.h"
+#include <boost/stacktrace.hpp>
+#include <iostream>
 
 // Assertion uses C++ exception
 void assertFunc(bool expr, const char* file, const char* fname, int line) {
     if (!expr) {
         fatalstream << "Assertion failed!\nAt line " << line
             << " in \"" << file << "\", function " << fname;
+        infostream << "Backtrace:\n" << stacktrace;
         throw std::runtime_error("Assertion failed!");
     }
+}
+
+std::ostream &stacktrace(std::ostream &s) {
+    s << boost::stacktrace::stacktrace();
+    return s;
 }

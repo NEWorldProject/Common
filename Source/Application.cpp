@@ -18,54 +18,309 @@
 //
 
 #include <iostream>
+#include <string>
+#include <cstring>
+#include "Core/Debug.h"
 #include "Core/Application.h"
 #include "Core/Logger.h"
+#include "Core/StringUtils.h"
+
+#if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
+#include "Internals/Windows.hpp"
+#endif
+
 
 namespace {
     Application* appInstanceHandle = nullptr;
     argagg::parser parser;
-    argagg::parser_results pargs;
+    argagg::parser_results parserResults;
 }
 
-Application::Application() {
-    if (!appInstanceHandle)
-        appInstanceHandle = this;
-    else {
-        errorstream << "Double Application Instance! Stopping";
-        throw std::runtime_error("Double App Instance");
-    }
+Application::Application() noexcept {
+    Assert(!appInstanceHandle);
+    appInstanceHandle = this;
 }
 
-Application::~Application() {}
+Application::~Application() = default;
 
 void Application::run() {}
 
-argagg::parser_results& Application::args() { return pargs; }
+argagg::parser_results& Application::args() { return parserResults; }
 
 CmdOption::CmdOption(argagg::definition def) {
     parser.definitions.push_back(std::move(def));
 }
 
-void _InternalFilesystemCoInit(const char *argv0);
+namespace {
+    constexpr const char* pathSep =
+#if (BOOST_OS_WINDOWS)
+            ";";
+#else
+    ":";
+#endif
 
-NWAPIEXPORT int main(int argc, char** argv) {
-    _InternalFilesystemCoInit(argv[0]);
-    try {
-        pargs = parser.parse(argc, argv);
-        try {
-            if (pargs["help"]) {
-                argagg::fmt_ostream fmt(std::cerr);
-                fmt << "Usage:" << std::endl << parser;
-                return 0;
+    constexpr const char* sep =
+#if (BOOST_OS_WINDOWS)
+            "\\";
+#else
+    "/";
+#endif
+
+    std::string getEnv(const std::string& varName) {
+        if (auto value = std::getenv(varName.c_str()); value)
+            return value;
+        return "";
+    }
+
+    auto getDirectoryListFromDelimitedString(const std::string& str) {
+        std::vector<std::string> dirs{};
+        if (!str.empty())
+            dirs = split(str, pathSep[0]);
+        return dirs;
+    }
+
+    filesystem::path searchPath(const std::string& file) {
+        if (file.empty()) return {};
+        // Drat! I have to do it the hard way.
+        for (auto&& pth : getDirectoryListFromDelimitedString(getEnv("PATH")))
+            if (auto p = filesystem::path(pth) / file; filesystem::exists(p) && filesystem::is_regular_file(p))
+                return p.make_preferred();
+        return {};
+    }
+
+    filesystem::path makeWithString(const char* argv0) {
+        std::error_code ec;
+        auto p(filesystem::canonical(argv0, ec));
+        return ec ? p.make_preferred() : filesystem::path{};
+    }
+
+    auto makeWithString(const std::string& str) { return makeWithString(str.c_str()); }
+
+    filesystem::path executablePathFallback(const char* argv0) {
+        if (argv0 == nullptr) return {};
+        if (argv0[0] == 0) return {};
+        // Check if the path is full path
+        if (strstr(argv0, sep) != nullptr)
+            if (auto pth = makeWithString(argv0); !pth.empty()) return pth;
+        // Not full path, try to search in PATH
+        if (auto pth = searchPath(argv0); !pth.empty()) return pth;
+        // Failed. Return anyway
+        return makeWithString(argv0);
+    }
+
+    class ExecPathHelper {
+    public:
+        static auto& getInstance() { static ExecPathHelper ins; return ins; }
+
+        explicit operator filesystem::path() {
+            if(mPath.empty())
+                init(nullptr);
+            return mPath;
+        }
+        void init(const char* argv0) { mPath = get(argv0).remove_filename(); }
+    private:
+        filesystem::path get(const char* argv0) {
+            auto ret = executablePathWorker();
+            if (ret.empty())
+                ret = executablePathFallback(argv0);
+            return filesystem::absolute(ret.make_preferred());
+        }
+        filesystem::path mPath;
+        static filesystem::path executablePathWorker();
+    };
+}
+
+#if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    std::vector<wchar_t> buf(32768, 0);
+    return (GetModuleFileNameW(nullptr, buf.data(), buf.size()) ? buf.data() : L"");
+}
+
+#elif (BOOST_OS_SOLARIS)
+
+#include <cstdlib>
+#include <string>
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    if (auto pathString = getexecname(); !pathString.empty())
+        return makeWithString(pathString);
+    return "";
+}
+
+#elif (BOOST_OS_QNX)
+
+#include <fstream>
+#include <string>
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    std::string s;
+    std::ifstream ifs("/proc/self/exefile");
+    std::getline(ifs, s);
+    if (ifs.fail() || s.empty()) {
+        return ret;
+    }
+    return ret;
+}
+
+#elif (BOOST_OS_MACOS || BOOST_OS_IOS)
+
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <vector>
+
+#include <mach-o/dyld.h>
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    std::vector<char> buf(1024, 0);
+    uint32_t size = static_cast<uint32_t>(buf.size());
+    bool havePath = false;
+    bool shouldContinue = true;
+    do {
+        if (_NSGetExecutablePath(buf.data(), &size) == -1) {
+            buf.resize(size << 1);
+            std::fill(std::begin(buf), std::end(buf), 0);
+        }
+        else {
+            shouldContinue = false;
+            if (buf.at(0) != 0) {
+                havePath = true;
             }
         }
-        catch(...) {}
+    } while (shouldContinue);
+    if (!havePath) {
+        return ret;
     }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+    return makeWithString(std::string(buf.data(), size));
+}
+
+#elif (BOOST_OS_ANDROID || BOOST_OS_HPUX || BOOST_OS_LINUX || BOOST_OS_UNIX)
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    std::error_code ec;
+    auto linkPath = filesystem::read_symlink("/proc/self/exe", ec);
+    if (ec)
+        return ret;
+    return makeWithString(linkPath.string());
+}
+
+#elif (BOOST_OS_BSD)
+
+#include <string>
+#include <vector>
+
+#if (BOOST_OS_BSD_FREE)
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <stdlib.h>
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    int mib[4]{ CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+    size_t size;
+    if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1) return ret;
+    std::vector<char> buf(size + 1, 0);
+    if (sysctl(mib, 4, buf.data(), &size, nullptr, 0) == -1) return ret;
+    return makeWithString(std::string(buf.data(), size));
+}
+
+#elif (BOOST_OS_BSD_NET)
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    std::error_code ec;
+    auto linkPath = filesystem::read_symlink("/proc/curproc/exe", ec);
+    if (ec)
+        return ret;
+    return makeWithString(linkPath.string());
+}
+
+#elif BOOST_OS_BSD_DRAGONFLY
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <stdlib.h>
+
+filesystem::path ExecPathHelper::executablePathWorker() {
+    filesystem::path ret;
+    std::error_code ec;
+    auto linkPath = filesystem::read_symlink("/proc/curproc/file", ec);
+    if (ec) {
+        int mib[4]{ CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+        size_t size;
+        if (sysctl(mib, 4, nullptr, &size, nullptr, 0) != -1) {
+            std::vector<char> buf(size + 1, 0);
+            if (sysctl(mib, 4, buf.data(), &size, nullptr, 0) != -1) {
+                linkPath = std::string(buf.data(), size);
+            }
+        }
+    }
+    return makeWithString(linkPath.string());
+}
+
+#endif
+
+#else
+
+filesystem::path ExecPathHelper::executablePathWorker() { return ""; }
+
+#endif
+
+filesystem::path Application::executablePath() { return filesystem::path(ExecPathHelper::getInstance()); }
+
+filesystem::path Application::assetDir(const char *moduleName) { return executablePath() / "Assets" / moduleName; }
+
+filesystem::path Application::assetDir(const std::string &moduleName) { return assetDir(moduleName.c_str()); }
+
+filesystem::path Application::dataDir(const char* moduleName) { return executablePath() / "Data" / moduleName; }
+
+filesystem::path Application::dataDir(const std::string& moduleName) { return dataDir(moduleName.c_str()); }
+
+namespace {
+    void dumpHelpMessages() {
+        argagg::fmt_ostream fmt(std::cerr);
+        fmt << "Usage: [[options] ARG [ARG...]]" << std::endl << parser;
+    }
+
+    bool isHelp() {
+        return parserResults.has_option("help") ? parserResults["help"] : false;
+    }
+
+    bool internalInitialization(int argc, char** argv) {
+        try {
+            ExecPathHelper::getInstance().init(argv[0]);
+            parserResults = parser.parse(argc, argv);
+            return isHelp() ? (dumpHelpMessages(), false) : true;
+        }
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return false;
+        }
+    }
+
+    int runApplication() {
+        try {
+            Assert(appInstanceHandle);
+            appInstanceHandle->run();
+            return 0;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Application Failed with Uncaught Exception: " << e.what() << std::endl;
+        }
+        catch (...) {
+            std::cerr << "Application Failed with Unknown Uncaught Exception." << std::endl;
+        }
         return -1;
     }
-    if (appInstanceHandle)
-        appInstanceHandle->run();
-    return 0;
+
+    CmdOption help {{"help", {"-h", "--help"}, "shows this help message", 0}};
+}
+
+NWAPIEXPORT int main(int argc, char** argv) {
+    return internalInitialization(argc, argv) ? runApplication() : -1;
 }
