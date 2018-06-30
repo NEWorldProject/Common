@@ -38,9 +38,7 @@ protected:
 };
 
 struct NWCOREAPI CmdOption {
-    CmdOption(argagg::definition def);
-    argagg::definition def;
+    explicit CmdOption(argagg::definition def) noexcept;
 };
 
-#define DECL_CMD_OPTION(x) namespace { CmdOption opt { std::move(x) }; }
 #define DECL_APPLICATION(x) namespace { x appInstance {}; }
