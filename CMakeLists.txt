@@ -1,9 +1,6 @@
-cmake_minimum_required(VERSION 3.9)
-
-nw_module(CoreFeatures 0.0.1 INFINIDEAS)
+nw_project_prepare(CoreFeatures)
 
 nwstd_add_library(Core SHARED ${CMAKE_CURRENT_SOURCE_DIR})
-nw_module_target(CoreFeatures Core)
 
 target_compile_definitions(Core PRIVATE -DBOOST_STACKTRACE_LINK)
 

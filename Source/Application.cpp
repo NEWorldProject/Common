@@ -26,7 +26,7 @@
 #include "Core/StringUtils.h"
 
 #if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
-#include "Internals/Windows.hpp"
+#include "Windows.hpp"
 #endif
 
 
@@ -47,7 +47,7 @@ void Application::run() {}
 
 argagg::parser_results& Application::args() { return parserResults; }
 
-CmdOption::CmdOption(argagg::definition def) {
+CmdOption::CmdOption(argagg::definition def) noexcept {
     parser.definitions.push_back(std::move(def));
 }
 

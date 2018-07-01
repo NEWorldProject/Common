@@ -23,7 +23,7 @@
 
 #if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
 
-#include "Internals/Windows.hpp"
+#include "Windows.hpp"
 
 namespace {
     Library::HandleType loadLibrary(const std::string& filename, bool& success) {

@@ -21,7 +21,7 @@
 
 #if (BOOST_OS_CYGWIN || BOOST_OS_WINDOWS)
 
-#include "Internals/Windows.hpp"
+#include "Windows.hpp"
 
 namespace LColorFunc {
     // Microsoft Windows
