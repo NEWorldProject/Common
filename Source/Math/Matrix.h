@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstring>
 #include "Vector.h"
 #include "Core/Debug.h"
@@ -50,17 +51,17 @@ class Mat4 {
 public:
     static constexpr double Pi = 3.1415926535897932;
 
-    T data[16];
+    std::array<T, 16> data;
 
-    Mat4() { memset(data, 0, sizeof(data)); }
-    Mat4(const Mat4& rhs) { memcpy(data, rhs.data, sizeof(data)); }
+    Mat4() { memset(data.data(), 0, sizeof(data)); }
+    Mat4(const Mat4& rhs) { memcpy(data.data(), rhs.data.data(), sizeof(data)); }
 
     explicit Mat4(T x) {
-        memset(data, 0, sizeof(data));
+        memset(data.data(), 0, sizeof(data));
         data[0] = data[5] = data[10] = data[15] = x; // Identity matrix
     }
 
-    explicit Mat4(T* src) { memcpy(data, src, sizeof(data)); }
+    explicit Mat4(T* src) { memcpy(data.data(), src, sizeof(data)); }
 
 #ifndef NEWORLD_DEBUG
 
@@ -70,7 +71,7 @@ public:
 
     Mat4Row<T> operator[](size_t index) {
         Assert(index < 4);
-        return Mat4Row<T>(data + index * 4);
+        return Mat4Row<T>(data.data() + index * 4);
     }
 
 #endif
