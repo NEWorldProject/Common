@@ -29,7 +29,6 @@
 #include "Windows.hpp"
 #endif
 
-
 namespace {
     Application* appInstanceHandle = nullptr;
     argagg::parser parser;
@@ -89,7 +88,7 @@ namespace {
     }
 
     filesystem::path makeWithString(const char* argv0) {
-        std::error_code ec;
+        filesystem::error_code ec;
         auto p(filesystem::canonical(argv0, ec));
         return ec ? p.make_preferred() : filesystem::path{};
     }

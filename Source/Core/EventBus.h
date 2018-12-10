@@ -23,6 +23,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include "Config.h"
+#include "Delegate.h"
 
 class NWCOREAPI EventBus {
 public:

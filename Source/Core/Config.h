@@ -61,3 +61,11 @@
 #else
 #define NWCOREAPI NWAPIENTRY
 #endif
+
+#define _DO_JOIN( symbol1, symbol2 ) symbol1##symbol2
+#define JOIN( symbol1, symbol2 ) _DO_JOIN( symbol1, symbol2 )
+#define LINE_NAME( prefix ) JOIN( prefix, __LINE__ )
+
+#define BGEIN_STATIC_INIT_RUN() namespace { struct LINE_NAME(NWSIR) { LINE_NAME(NWSAR) noexcept () {
+
+#define END_STATIC_INIT_RUN }} LINE_NAME(NWSARE); }

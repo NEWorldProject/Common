@@ -20,6 +20,7 @@
 #pragma once
 
 #include <argagg.hpp>
+#include <string_view>
 #include "Config.h"
 #include "Filesystem.h"
 
@@ -41,4 +42,4 @@ struct NWCOREAPI CmdOption {
     explicit CmdOption(argagg::definition def) noexcept;
 };
 
-#define DECL_APPLICATION(x) namespace { x appInstance {}; }
+#define DECL_APPLICATION(x) namespace { x LINE_NAME(NWAPPI) {}; }
