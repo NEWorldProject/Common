@@ -24,15 +24,15 @@
 #include <limits>
 #include <type_traits>
 
-template <class IntrusiveType> class IntrusivePointer;
+template <class IntrusiveType> class IntrusivePtr;
 
 class IntrusiveVTBase {
     template <class T>
-    friend class IntrusivePointer;
+    friend class IntrusivePtr;
     template <class T>
-    friend class WeakIntrusivePointer;
+    friend class WeakIntrusivePtr;
     template <class U, class ...Args>
-    friend IntrusivePointer<U> MakeIntrusive(Args&&... args);
+    friend IntrusivePtr<U> MakeIntrusive(Args&&... args);
 
     // Get Control Counts
     uint32_t Count() const noexcept { return static_cast<uint32_t>(_Ctrl.load() >> 32); }
@@ -86,27 +86,27 @@ public:
 };
 
 template <class IntrusiveType>
-class IntrusivePointer {
+class IntrusivePtr {
 public:
     using ElementType = IntrusiveType;
 
-    constexpr IntrusivePointer() noexcept = default;
+    constexpr IntrusivePtr() noexcept = default;
 
-    IntrusivePointer(const IntrusivePointer& r) noexcept
+    IntrusivePtr(const IntrusivePtr& r) noexcept
             :_Ctrl(r._Ctrl), _Val(r._Val) { if (_Ctrl) _Ctrl->Acquire(); }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit IntrusivePointer(const IntrusivePointer<Other>& r) noexcept
+    explicit IntrusivePtr(const IntrusivePtr<Other>& r) noexcept
             : _Ctrl(r._Ctrl), _Val(r._Val) { if (_Ctrl) _Ctrl->Acquire(); }
 
-    IntrusivePointer(IntrusivePointer&& r) noexcept
+    IntrusivePtr(IntrusivePtr&& r) noexcept
             :_Ctrl(r._Ctrl), _Val(r._Val) { r._Ctrl = nullptr; }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit IntrusivePointer(IntrusivePointer<Other>&& r) noexcept
+    explicit IntrusivePtr(IntrusivePtr<Other>&& r) noexcept
             : _Ctrl(r._Ctrl), _Val(r._Val) { r._Ctrl = nullptr; }
 
-    IntrusivePointer& operator=(const IntrusivePointer& r) noexcept {
+    IntrusivePtr& operator=(const IntrusivePtr& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -116,7 +116,7 @@ public:
     }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    IntrusivePointer& operator=(const IntrusivePointer<Other>& r) noexcept {
+    IntrusivePtr& operator=(const IntrusivePtr<Other>& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -125,7 +125,7 @@ public:
         return *this;
     }
 
-    IntrusivePointer& operator=(IntrusivePointer&& r) noexcept {
+    IntrusivePtr& operator=(IntrusivePtr&& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -135,7 +135,7 @@ public:
     }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    IntrusivePointer& operator=(IntrusivePointer<Other>&& r) noexcept {
+    IntrusivePtr& operator=(IntrusivePtr<Other>&& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -144,7 +144,7 @@ public:
         return *this;
     }
 
-    ~IntrusivePointer() noexcept { if (_Ctrl) _Ctrl->TryRelease(); }
+    ~IntrusivePtr() noexcept { if (_Ctrl) _Ctrl->TryRelease(); }
 
     explicit operator bool() const noexcept { return _Ctrl; }
 
@@ -157,17 +157,17 @@ public:
     ElementType* operator->() const noexcept { return _Val; }
 private:
     template <class U, class ...Args>
-    friend IntrusivePointer<U> MakeIntrusive(Args&&... args);
+    friend IntrusivePtr<U> MakeIntrusive(Args&&... args);
 
     template <class T>
     friend class WeakIntrusivePointer;
 
     template <class = std::enable_if_t<std::is_convertible_v<IntrusiveType*, IntrusiveVTBase*>>>
-    explicit IntrusivePointer(IntrusiveType* unmanaged) noexcept
+    explicit IntrusivePtr(IntrusiveType* unmanaged) noexcept
             :_Ctrl(unmanaged), _Val(unmanaged) { _Ctrl->Acquire(); }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit IntrusivePointer(Other* unmanaged) noexcept
+    explicit IntrusivePtr(Other* unmanaged) noexcept
             : _Ctrl(unmanaged), _Val(unmanaged) { _Ctrl->Acquire(); }
 
     IntrusiveVTBase* _Ctrl = nullptr;
@@ -175,7 +175,7 @@ private:
 };
 
 template <class U, class... Args>
-IntrusivePointer<U> MakeIntrusive(Args&&... args) {
+IntrusivePtr<U> MakeIntrusive(Args&&... args) {
     struct R {
         R() : Base(operator new(sizeof(U), std::align_val_t(alignof(U)))) {}
         void* Base = nullptr;
@@ -187,35 +187,35 @@ IntrusivePointer<U> MakeIntrusive(Args&&... args) {
     _VTBase->_BaseOffset = static_cast<int32_t>(
             reinterpret_cast<uintptr_t>(_Base.Base) - reinterpret_cast<uintptr_t>(_VTBase));
     _Base.Base = nullptr;
-    return IntrusivePointer<U>(_Ptr);
+    return IntrusivePtr<U>(_Ptr);
 }
 
 template <class IntrusiveType>
-class WeakIntrusivePointer {
+class WeakIntrusivePtr {
 public:
     using ElementType = IntrusiveType;
 
-    constexpr WeakIntrusivePointer() noexcept = default;
+    constexpr WeakIntrusivePtr() noexcept = default;
 
-    WeakIntrusivePointer(const WeakIntrusivePointer& r) noexcept
+    WeakIntrusivePtr(const WeakIntrusivePtr& r) noexcept
             :_Ctrl(r._Ctrl), _Val(r._Val) { if (_Ctrl) _Ctrl->Reference(); }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit WeakIntrusivePointer(const WeakIntrusivePointer<Other>& r) noexcept
+    explicit WeakIntrusivePtr(const WeakIntrusivePtr<Other>& r) noexcept
             : _Ctrl(r._Ctrl), _Val(r._Val) { if (_Ctrl) _Ctrl->Reference(); }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit WeakIntrusivePointer(const IntrusivePointer<Other>& r) noexcept
+    explicit WeakIntrusivePtr(const IntrusivePtr<Other>& r) noexcept
             : _Ctrl(r._Ctrl), _Val(r._Val) { if (_Ctrl) _Ctrl->Reference(); }
 
-    WeakIntrusivePointer(WeakIntrusivePointer&& r) noexcept
+    WeakIntrusivePtr(WeakIntrusivePtr&& r) noexcept
     :_Ctrl(r._Ctrl), _Val(r._Val) { r._Ctrl = nullptr; }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    explicit WeakIntrusivePointer(WeakIntrusivePointer<Other>&& r) noexcept
+    explicit WeakIntrusivePtr(WeakIntrusivePtr<Other>&& r) noexcept
     : _Ctrl(r._Ctrl), _Val(r._Val) { r._Ctrl = nullptr; }
 
-    WeakIntrusivePointer& operator=(const WeakIntrusivePointer& r) noexcept {
+    WeakIntrusivePtr& operator=(const WeakIntrusivePtr& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -225,7 +225,7 @@ public:
     }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    WeakIntrusivePointer& operator=(const WeakIntrusivePointer<Other>& r) noexcept {
+    WeakIntrusivePtr& operator=(const WeakIntrusivePtr<Other>& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -235,7 +235,7 @@ public:
     }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    WeakIntrusivePointer& operator=(const IntrusivePointer<Other>& r) noexcept {
+    WeakIntrusivePtr& operator=(const IntrusivePtr<Other>& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -244,7 +244,7 @@ public:
         return *this;
     }
 
-    WeakIntrusivePointer& operator=(WeakIntrusivePointer&& r) noexcept {
+    WeakIntrusivePtr& operator=(WeakIntrusivePtr&& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -254,7 +254,7 @@ public:
     }
 
     template <class Other, class = std::enable_if_t<std::is_convertible_v<Other*, IntrusiveType*>>>
-    WeakIntrusivePointer& operator=(WeakIntrusivePointer<Other>&& r) noexcept {
+    WeakIntrusivePtr& operator=(WeakIntrusivePtr<Other>&& r) noexcept {
         if (this != std::addressof(r)) {
             _Ctrl = r._Ctrl;
             _Val = r._Val;
@@ -263,14 +263,14 @@ public:
         return *this;
     }
 
-    ~WeakIntrusivePointer() noexcept { if (_Ctrl) _Ctrl->TryDereference(); }
+    ~WeakIntrusivePtr() noexcept { if (_Ctrl) _Ctrl->TryDereference(); }
 
     auto UseCount() const noexcept { return _Ctrl->Count(); }
 
     bool Expired() const noexcept { return !UseCount(); }
 
-    IntrusivePointer<IntrusiveType> Lock() const noexcept {
-        IntrusivePointer<IntrusiveType> ret {};
+    IntrusivePtr<IntrusiveType> Lock() const noexcept {
+        IntrusivePtr<IntrusiveType> ret {};
         if (bool res = _Ctrl->Lock(); res) {
             ret._Ctrl = _Ctrl;
             ret._Val = _Val;
@@ -283,19 +283,19 @@ private:
 };
 
 template <class T, class U>
-bool operator < (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() < r.Get(); }
+bool operator < (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() < r.Get(); }
 
 template <class T, class U>
-bool operator > (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() > r.Get(); }
+bool operator > (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() > r.Get(); }
 
 template <class T, class U>
-bool operator <= (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() <= r.Get(); }
+bool operator <= (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() <= r.Get(); }
 
 template <class T, class U>
-bool operator >= (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() >= r.Get(); }
+bool operator >= (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() >= r.Get(); }
 
 template <class T, class U>
-bool operator == (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() == r.Get(); }
+bool operator == (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() == r.Get(); }
 
 template <class T, class U>
-bool operator != (const IntrusivePointer<T>& l, const IntrusivePointer<U>& r) noexcept { return l.Get() != r.Get(); }
+bool operator != (const IntrusivePtr<T>& l, const IntrusivePtr<U>& r) noexcept { return l.Get() != r.Get(); }

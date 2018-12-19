@@ -21,17 +21,38 @@ struct Ignore {
 };
 
 namespace __Details {
-    class DelegateBase {
+    struct DelegateHelpers {
     protected:
         struct A {
             virtual ~A() noexcept = default;
             std::shared_ptr<A> _Retain = nullptr;
         };
+    public:
+        class Connection {
+        public:
+            constexpr Connection() noexcept = default;
+
+            bool Connected() const noexcept { return !_H.expired(); }
+
+            void Disconnect() noexcept { if (auto p = _H.lock(); p) p->_Retain.reset(); }
+        private:
+            template <class Mutex>
+            friend class DelegateBase;
+            explicit Connection(std::shared_ptr<A> ptr) noexcept
+                    :_H(ptr) { ptr->_Retain = std::move(ptr); }
+            std::weak_ptr<A> _H;
+        };
+    };
+
+    template <class Mutex = std::mutex>
+    class DelegateBase: public DelegateHelpers {
+    protected:
+        DelegateBase() = default;
 
         template <class T>
         auto Add(std::shared_ptr<T> closure) {
             {
-                std::lock_guard<std::mutex> lk(_Lock);
+                std::lock_guard<Mutex> lk(_Lock);
                 _List.emplace_back(closure);
                 ++_Count;
             }
@@ -39,7 +60,7 @@ namespace __Details {
         }
 
         auto ListValidsAndCompress() const {
-            std::lock_guard<std::mutex> lk(_Lock);
+            std::lock_guard<Mutex> lk(_Lock);
             std::vector<std::shared_ptr<void>> ret {};
             ret.reserve(_Count);
             if (_Count < (_List.size() * 3 / 4)) {
@@ -69,30 +90,22 @@ namespace __Details {
         }
     private:
         uint64_t _Count = 0;
-        mutable std::mutex _Lock;
+        mutable Mutex _Lock;
         mutable std::vector<std::weak_ptr<void>> _List;
     public:
+        template <class = std::enable_if_t<std::is_copy_assignable_v<Mutex>>>
+        void SetMutex(const Mutex& mutex) { _Lock = mutex; }
+
+        template <class = std::enable_if_t<std::is_move_assignable_v<Mutex>>>
+        void SetMutex(Mutex&& mutex) { _Lock = std::move(mutex); }
+
         auto Size() const noexcept { return _Count; }
 
         bool Empty() const noexcept { return !static_cast<bool>(_Count); }
-
-        class Connection {
-        public:
-            constexpr Connection() noexcept = default;
-
-            bool Connected() const noexcept { return !_H.expired(); }
-
-            void Disconnect() noexcept { if (auto p = _H.lock(); p) p->_Retain.reset(); }
-        private:
-            friend class DelegateBase;
-            explicit Connection(std::shared_ptr<A> ptr) noexcept
-                    :_H(ptr) { ptr->_Retain = std::move(ptr); }
-            std::weak_ptr<A> _H;
-        };
     };
 }
 
-using Connection = __Details::DelegateBase::Connection;
+using Connection = __Details::DelegateHelpers::Connection;
 
 class ScopedConnection {
 public:
@@ -122,12 +135,13 @@ private:
     Connection _Conn;
 };
 
-template <class T, template <class U> class Reduce = LastValue>
+template <class T, template <class U> class Reduce = LastValue, class Mutex = std::mutex>
 class Delegate;
 
-template <class T, template<class U> class Reduce, class ...Args>
-class Delegate<T(Args...), Reduce> : __Details::DelegateBase {
-    struct B : A { virtual T Call(Args&& ... arg) const = 0; };
+template <class T, template<class U> class Reduce, class Mutex, class ...Args>
+class Delegate<T(Args...), Reduce, Mutex> : public  __Details::DelegateBase<Mutex> {
+    using Base = __Details::DelegateBase<Mutex>;
+    struct B : Base::A { virtual T Call(Args&& ... arg) const = 0; };
 
     template <class Func>
     struct P : B {
@@ -139,29 +153,31 @@ class Delegate<T(Args...), Reduce> : __Details::DelegateBase {
 public:
     template <class Func>
     Connection Connect(Func&& fn) {
-        return Add<B>(std::make_shared<P<std::decay_t<Func>>>(std::forward<Func>(fn)));
+        return Base::template Add<B>(std::make_shared<P<std::decay_t<Func>>>(std::forward<Func>(fn)));
     }
 
     auto operator()(Args... arg) const {
-        auto locked = ListValidsAndCompress();
+        auto locked = Base::template ListValidsAndCompress();
         if constexpr(std::is_same_v<typename Reduce<T>::TargetType, void>) {
             for (const auto& x : locked)
-                As<B>(x).Call(std::forward<Args>(arg)...);
+                Base::template As<B>(x).Call(std::forward<Args>(arg)...);
         }
         else {
             typename Reduce<T>::TargetType ret{};
             Reduce<T> reduce;
             for (const auto& x : locked)
-                reduce(ret, As<B>(x).Call(std::forward<Args>(arg)...));
+                reduce(ret, Base::template As<B>(x).Call(std::forward<Args>(arg)...));
             return ret;
         }
     }
 };
 
-template <class Sender>
-class GenericSignal : __Details::DelegateBase {
+template <class Sender, class Mutex = std::mutex>
+class GenericSignal :  public  __Details::DelegateBase<Mutex> {
+    using Base = __Details::DelegateBase<Mutex>;
+
     template <class Message>
-    struct B : A { virtual void Call(Sender& sender, const Message& message) const = 0; };
+    struct B : Base::A { virtual void Call(Sender& sender, const Message& message) const = 0; };
 
     template <class Message, class Func>
     struct P : B<Message> {
@@ -173,19 +189,19 @@ class GenericSignal : __Details::DelegateBase {
 public:
     template <class Message, class Func>
     Connection ConnectUnsafe(Func&& fn) {
-        return Add<B<Message>>(std::make_shared<P<Message, std::decay_t<Func>>>(std::forward<Func>(fn)));
+        return Base::template Add<B<Message>>(std::make_shared<P<Message, std::decay_t<Func>>>(std::forward<Func>(fn)));
     }
 
     template <class Message>
     void CastUnsafe(Sender& sender, const Message& message) const {
-        auto locked = ListValidsAndCompress();
+        auto locked = Base::template ListValidsAndCompress();
         for (const auto& x : locked)
-            As<B<Message>>(x).Call(sender, message);
+            Base::template As<B<Message>>(x).Call(sender, message);
     }
 };
 
-template <class Sender, class Message>
-class Signal : public GenericSignal<Sender> {
+template <class Sender, class Message, class Mutex = std::mutex>
+class Signal : public GenericSignal<Sender, Mutex> {
 public:
     template <class Func>
     Connection Connect(Func&& fn) {
